@@ -10,13 +10,11 @@ System.register('flarum/tags/addTagComposer', ['flarum/extend', 'flarum/componen
       var tag = app.store.getBy('tags', 'slug', this.params().tags);
 
       if (tag) {
-        (function () {
-          var parent = tag.parent();
-          var tags = parent ? [parent, tag] : [tag];
-          promise.then(function (component) {
-            return component.tags = tags;
-          });
-        })();
+        var parent = tag.parent();
+        var tags = parent ? [parent, tag] : [tag];
+        promise.then(function (component) {
+          return component.tags = tags;
+        });
       }
     });
 
@@ -51,9 +49,16 @@ System.register('flarum/tags/addTagComposer', ['flarum/extend', 'flarum/componen
     override(DiscussionComposer.prototype, 'onsubmit', function (original) {
       var _this2 = this;
 
-      if (!this.tags.length) {
+      var chosenTags = this.tags;
+      var chosenPrimaryTags = chosenTags.filter(function (tag) {
+        return tag.position() !== null && !tag.isChild();
+      });
+      var chosenSecondaryTags = chosenTags.filter(function (tag) {
+        return tag.position() === null;
+      });
+      if (!chosenTags.length || chosenPrimaryTags.length < app.forum.attribute('minPrimaryTags') || chosenSecondaryTags.length < app.forum.attribute('minSecondaryTags')) {
         app.modal.show(new TagDiscussionModal({
-          selectedTags: [],
+          selectedTags: chosenTags,
           onsubmit: function onsubmit(tags) {
             _this2.tags = tags;
             original();
@@ -329,15 +334,13 @@ System.register('flarum/tags/addTagList', ['flarum/extend', 'flarum/components/I
 });;
 'use strict';
 
-System.register('flarum/tags/components/DiscussionTaggedPost', ['flarum/components/EventPost', 'flarum/helpers/punctuateSeries', 'flarum/tags/helpers/tagsLabel'], function (_export, _context) {
+System.register('flarum/tags/components/DiscussionTaggedPost', ['flarum/components/EventPost', 'flarum/tags/helpers/tagsLabel'], function (_export, _context) {
   "use strict";
 
-  var EventPost, punctuateSeries, tagsLabel, DiscussionTaggedPost;
+  var EventPost, tagsLabel, DiscussionTaggedPost;
   return {
     setters: [function (_flarumComponentsEventPost) {
       EventPost = _flarumComponentsEventPost.default;
-    }, function (_flarumHelpersPunctuateSeries) {
-      punctuateSeries = _flarumHelpersPunctuateSeries.default;
     }, function (_flarumTagsHelpersTagsLabel) {
       tagsLabel = _flarumTagsHelpersTagsLabel.default;
     }],
